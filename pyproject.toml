@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools", "wheel", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quinny_sae_fxns"
+version = "0.1.0"
+description = "A package for SAEs in chemistry"
+# authors = ["Your Name <your.email@example.com>"]  # Optional
+
+# [tool.poetry.dependencies]
+# python = "^3.8"
+# torch = "^1.13"
+# transformers = "^4.19"
+
