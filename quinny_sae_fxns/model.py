@@ -3,9 +3,12 @@ import tqdm
 from peft import PeftModel
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
+from quinny_sae_fxns.utils import print_hf_file_sizes, get_device
+
 
 PRETRAINED_MODELS = {
     'facebook/galactica-125m',
+    'facebook/galactica-6.7b',
     'osunlp/LlaSMol-Mistral-7B',
     'osunlp/LlaSMol-Galactica-6.7B',
     'osunlp/LlaSMol-Llama2-7B',
@@ -19,16 +22,7 @@ BASE_MODELS = {
     'osunlp/LlaSMol-CodeLlama-7B': 'codellama/CodeLlama-7b-hf',
 }
 
-def get_device():
-    if torch.cuda.is_available():
-        device = "cuda"
-    elif torch.backends.mps.is_available():
-        device = "mps"
-    else:
-        device = "cpu"
-    return device
-
-def get_context_galatica(data, task):
+def get_context_galatica(data, task): # CURRENTLY NOT USED
     """
     Preprocesses inputs for Galactica model.
     """
@@ -49,7 +43,7 @@ def get_context_galatica(data, task):
         return contexts[0]
     return contexts
 
-def prepare_inputs(data, model_name, task='name_conversion-i2s'):
+def prepare_inputs(data, model_name, task='name_conversion-i2s'): # CURRENTLY NOT USED
     """
     Prepares input data according to the model's requirements.
     Note: designed for SMolInstruct dataset
@@ -74,17 +68,17 @@ def load_tokenizer_and_model(model_name, base_model_name=None, device=None):
     if device is None:
         device = get_device()
     
+    print_hf_file_sizes(model_name, repo_type='model') 
     if base_model_name: # only occurs with LlasMol, it's technically finetuned model
+        print_hf_file_sizes(base_model_name, repo_type='model')
         tokenizer = AutoTokenizer.from_pretrained(base_model_name)
-        base_model = AutoModelForCausalLM.from_pretrained(base_model_name).to(device)
-        model = PeftModel.from_pretrained(base_model, model_name).to(device)
+        base_model = AutoModelForCausalLM.from_pretrained(base_model_name,torch_dtype=torch.bfloat16).to(device) 
+        model = PeftModel.from_pretrained(base_model, model_name, torch_dtype=torch.bfloat16).to(device)
         model = model.merge_and_unload()
 
-    # elif model_name.startswith('facebook/galactica'):
-    #     model = OPTForCausalLM.from_pretrained(model_name, device_map="auto")
     else:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.bfloat16).to(device)
 
     tokenizer.padding_side = 'left'
     tokenizer.pad_token = '<pad>'
